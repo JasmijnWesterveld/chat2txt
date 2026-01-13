@@ -23,7 +23,13 @@ git clone <repository-url>
 cd chat2txt
 ```
 
-2. Install dependencies:
+2. (Optional) Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -47,6 +53,27 @@ python chat2txt/gui.py
 - **ADD GLOBAL TALES PROMPTS**: Enable detection of emotional prompts (happy, angry, confused, proud, problem, important)
 - **RUN CONVERSION**: Start the conversion process
 - **OPEN FILE LOCATION**: Open the output folder in file explorer
+
+## Building an Executable
+
+To create a standalone .exe file using PyInstaller:
+
+1. Install PyInstaller (if not already installed):
+```bash
+pip install pyinstaller
+```
+
+2. Build the executable:
+```bash
+pyinstaller --onefile --windowed --name chat2txt chat2txt/__main__.py
+```
+
+The options mean:
+- `--onefile`: Creates a single executable file (instead of a folder)
+- `--windowed`: Hides the console window (GUI app only)
+- `--name chat2txt`: Names the executable "chat2txt"
+
+3. Find the executable in the `dist/` folder
 
 ## Input Format
 
