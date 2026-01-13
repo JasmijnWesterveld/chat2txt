@@ -1,0 +1,2 @@
+[tool.streamlit.server]
+maxUploadSize = 200
