@@ -178,9 +178,9 @@ def main():
     col1, col2 = st.columns([1, 1], gap="medium")
     
     with col1:
-        st.subheader("📤 Upload Files")
+        st.subheader("📤 Select Files")
         uploaded_files = st.file_uploader(
-            "Select .cha file(s) to convert",
+            "Select .cha file(s) to convert. Note. These files are not uploaded anywhere but stored in memory.",
             type=["cha"],
             accept_multiple_files=True
         )
