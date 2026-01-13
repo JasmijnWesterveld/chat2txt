@@ -174,90 +174,84 @@ def main():
         - Timestamp tracking
         """)
     
-    # Main content area
-    col1, col2 = st.columns(2)
+    # Main content area with columns
+    col1, col2 = st.columns([1, 1], gap="medium")
     
     with col1:
-        st.subheader("Upload Files")
+        st.subheader("📤 Upload Files")
         uploaded_files = st.file_uploader(
             "Select .cha file(s) to convert",
             type=["cha"],
             accept_multiple_files=True
         )
     
+    # Process files and display on the right
     with col2:
-        st.subheader("Download Results")
-        st.markdown("*Files will appear here after conversion*")
-    
-    # Process files
-    if uploaded_files:
-        st.divider()
-        st.subheader("Processing...")
+        st.subheader("📥 Results")
         
-        results = []
-        download_files = {}
-        
-        for uploaded_file in uploaded_files:
-            # Read the uploaded file
-            content = uploaded_file.read().decode('utf-8-sig')
-            base_name = os.path.splitext(uploaded_file.name)[0]
-            output_name = f"{base_name}_CU.txt"
+        if uploaded_files:
+            results = []
+            download_files = {}
             
-            # Process the file
-            output_content, prompts_found = process_cha_file(content, include_prompts)
-            
-            # Store results
-            results.append({
-                'name': uploaded_file.name,
-                'output_name': output_name,
-                'content': output_content,
-                'prompts': prompts_found
-            })
-            download_files[output_name] = output_content
-            
-            # Display results for this file
-            st.success(f"✓ Processed: {uploaded_file.name}")
-            
-            if include_prompts and prompts_found:
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    st.markdown("**Prompts Found:**")
-                    for prompt, found in prompts_found.items():
-                        status = "✅" if found else "❌"
-                        st.write(f"{status} {prompt.capitalize()}")
+            for uploaded_file in uploaded_files:
+                # Read the uploaded file
+                content = uploaded_file.read().decode('utf-8-sig')
+                base_name = os.path.splitext(uploaded_file.name)[0]
+                output_name = f"{base_name}_CU.txt"
                 
-                not_found = [p for p, f in prompts_found.items() if not f]
-                if not_found:
-                    with col2:
-                        st.warning(f"**Not found:** {', '.join(not_found)}")
-        
-        # Download section
-        st.divider()
-        st.subheader("📥 Download Results")
-        
-        if len(download_files) == 1:
-            # Single file - direct download
-            output_name = list(download_files.keys())[0]
-            content = download_files[output_name]
-            st.download_button(
-                label=f"📄 Download {output_name}",
-                data=content,
-                file_name=output_name,
-                mime="text/plain"
-            )
-        else:
-            # Multiple files - zip download
-            zip_buffer = StringIO()
-            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                for file_name, content in download_files.items():
-                    zip_file.writestr(file_name, content)
+                # Process the file
+                output_content, prompts_found = process_cha_file(content, include_prompts)
+                
+                # Store results
+                results.append({
+                    'name': uploaded_file.name,
+                    'output_name': output_name,
+                    'content': output_content,
+                    'prompts': prompts_found
+                })
+                download_files[output_name] = output_content
+                
+                # Display results for this file
+                st.success(f"✓ {uploaded_file.name}")
+                
+                if include_prompts and prompts_found:
+                    with st.expander("View Prompts"):
+                        for prompt, found in prompts_found.items():
+                            status = "✅" if found else "❌"
+                            st.write(f"{status} {prompt.capitalize()}")
+                
+                st.markdown("---")
             
-            st.download_button(
-                label=f"📦 Download All ({len(download_files)} files)",
-                data=zip_buffer.getvalue(),
-                file_name="converted_files.zip",
-                mime="application/zip"
-            )
+            # Download section
+            st.subheader("Download")
+            
+            if len(download_files) == 1:
+                # Single file - direct download
+                output_name = list(download_files.keys())[0]
+                content = download_files[output_name]
+                st.download_button(
+                    label=f"📄 {output_name}",
+                    data=content,
+                    file_name=output_name,
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            else:
+                # Multiple files - zip download
+                zip_buffer = StringIO()
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    for file_name, content in download_files.items():
+                        zip_file.writestr(file_name, content)
+                
+                st.download_button(
+                    label=f"📦 Download All ({len(download_files)} files)",
+                    data=zip_buffer.getvalue(),
+                    file_name="converted_files.zip",
+                    mime="application/zip",
+                    use_container_width=True
+                )
+        else:
+            st.info("Upload files to see results here")
 
 
 if __name__ == "__main__":
