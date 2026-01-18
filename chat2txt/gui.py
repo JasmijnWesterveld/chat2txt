@@ -3,50 +3,14 @@
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 import os
-import re
 import threading
 import subprocess
 import platform
-
-# Matches lines like:
-# *PAR123: some text . code_code
-body_line_regex = re.compile(r'^\*PAR(\d+):\s+(.*) . (\S+_\S+)$')
-
-def segment_into_c_units(text):
-    """
-    Splits text into communication units (C-units).
-    A simple approach:
-      1. Split on sentence-ending punctuation (.?!)
-      2. Strip whitespace
-      3. Discard empty units
-      4. Add a final period to each unit
-    """
-    # Replace &-<word> patterns with (<word>)
-    text = re.sub(r'&-(\w+)', r'(\1)', text)
-    
-    # Handle [/] marker for multi-word repetitions: <words> [/] words -> (words) words
-    text = re.sub(r'<([^>]+)>\s*\[/\]\s*\1', r'(\1) \1', text)
-    
-    # Handle [/] marker for single-word repetitions: word [/] word -> (word) word
-    text = re.sub(r'(\S+)\s*\[/\]\s*\1', r'(\1) \1', text)
-    
-    # Split on punctuation marks that can end a C-unit
-    raw_units = re.split(r'[.?!]', text)
-
-    c_units = []
-    for unit in raw_units:
-        unit = unit.strip()
-        if unit:
-            # Add final period if missing
-            if not unit.endswith('.'):
-                unit = unit + '.'
-            c_units.append(unit)
-
-    return c_units
+from chat2txt.processor import process_cha_content
 
 
 def process_cha_file(input_file, output_text_widget, include_prompts=True):
-    """Process a single .cha file and write output."""
+    """Process a single .cha file and write output to disk."""
     try:
         base_name = os.path.splitext(input_file)[0]
         output_file = base_name + '_CU.txt'
@@ -57,116 +21,16 @@ def process_cha_file(input_file, output_text_widget, include_prompts=True):
         output_text_widget.see("end")
         output_text_widget.update()
         
-        # First pass: find which PAR contains "listen to each prompt" and get last timestamp
-        prompt_par = None
-        last_timestamp = 0
+        # Read the input file
         with open(input_file, 'r', encoding='utf-8-sig') as infile:
-            for line in infile:
-                line = line.rstrip('\r\n\x15')
-                utterance_match = body_line_regex.match(line)
-                if utterance_match:
-                    par_num = utterance_match.group(1)
-                    utterance_text = utterance_match.group(2)
-                    timestamp_code = utterance_match.group(3).strip()
-                    
-                    # Extract timestamp
-                    try:
-                        timestamp_ms = int(timestamp_code.split('_')[-1])
-                        last_timestamp = timestamp_ms
-                    except (ValueError, IndexError):
-                        pass
-                    
-                    if 'listen to each prompt' in utterance_text:
-                        prompt_par = par_num
+            content = infile.read()
         
-        # Track which prompts were found
-        prompts_found = {
-            'happy': False,
-            'angry': False,
-            'confused': False,
-            'proud': False,
-            'problem': False,
-            'important': False
-        }
-        phrases_found_count = 0
+        # Process using shared processor
+        output_content, prompts_found = process_cha_content(content, include_prompts)
         
-        # Second pass: process the file
-        with open(input_file, 'r', encoding='utf-8-sig') as infile, open(output_file, 'w', encoding='utf-8') as outfile:
-            # Write starting timestamp
-            outfile.write("- 0:00\n")
-            
-            for line in infile:
-                line = line.rstrip('\r\n\x15')
-                utterance_match = body_line_regex.match(line)
-                if utterance_match:
-                    par_num = utterance_match.group(1)
-                    utterance_text = utterance_match.group(2)
-                    timestamp_code = utterance_match.group(3).strip()
-                    
-                    # Extract timestamp from the code (format: code_milliseconds)
-                    try:
-                        timestamp_ms = int(timestamp_code.split('_')[-1])
-                        last_timestamp = timestamp_ms
-                    except (ValueError, IndexError):
-                        pass
-
-                    # Convert to C-units
-                    c_units = segment_into_c_units(utterance_text)
-
-                    # Determine prefix: 'E' for the PAR with "listen to each prompt", 'C' for the other
-                    if prompt_par and par_num == prompt_par:
-                        prefix = 'E'
-                    else:
-                        prefix = 'C'
-
-                    # Write each unit as a separate line with appropriate prefix
-                    for cu in c_units:
-                        outfile.write(f"{prefix} {cu}\n")
-                        
-                        # Only check for prompts if enabled
-                        if include_prompts:
-                            # Check if contains the phrase about excited/happy
-                            if 'story about a time when you felt excited or really happy' in utterance_text:
-                                outfile.write("+ happy\n")
-                                prompts_found['happy'] = True
-                                phrases_found_count += 1
-                            
-                            # Check if contains the phrase about annoyed/angry
-                            if 'story about a time when you were really annoyed or angry' in utterance_text:
-                                outfile.write("+ angry\n")
-                                prompts_found['angry'] = True
-                                phrases_found_count += 1
-                            
-                            # Check if contains the phrase about worried/confused
-                            if 'story about a time when you felt worried or confused' in utterance_text:
-                                outfile.write("+ confused\n")
-                                prompts_found['confused'] = True
-                                phrases_found_count += 1
-                            
-                            # Check if contains the phrase about proud
-                            if 'story about a time when you felt proud of yourself' in utterance_text:
-                                outfile.write("+ proud\n")
-                                prompts_found['proud'] = True
-                                phrases_found_count += 1
-                            
-                            # Check if contains the phrase about problem
-                            if 'story about a time when you had a problem' in utterance_text:
-                                outfile.write("+ problem\n")
-                                prompts_found['problem'] = True
-                                phrases_found_count += 1
-                            
-                            # Check if contains the phrase about important
-                            if 'story about something that has happened to you that was very important to you' in utterance_text:
-                                outfile.write("+ important\n")
-                                prompts_found['important'] = True
-                                phrases_found_count += 1
-            
-            # Convert last timestamp from milliseconds to min:seconds and write at end
-            if last_timestamp > 0:
-                total_seconds = last_timestamp // 1000
-                minutes = total_seconds // 60
-                seconds = total_seconds % 60
-                outfile.write(f"- {minutes}:{seconds:02d}\n")
+        # Write output to disk
+        with open(output_file, 'w', encoding='utf-8') as outfile:
+            outfile.write(output_content)
         
         # Print status of prompts found
         output_text_widget.configure(state="normal")
@@ -195,6 +59,7 @@ def process_cha_file(input_file, output_text_widget, include_prompts=True):
         output_text_widget.configure(state="disabled")
         output_text_widget.see("end")
         output_text_widget.update()
+
 
 
 class ChatToTxtGUI:
