@@ -29,7 +29,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "chat2txt=chat2txt.gui:main",
+            "chat2txt=gui.gui:main",
         ],
     },
 )

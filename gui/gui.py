@@ -8,7 +8,6 @@ import subprocess
 import platform
 from chat2txt.processor import process_cha_content
 
-
 def process_cha_file(input_file, output_text_widget, include_prompts=True):
     """Process a single .cha file and write output to disk."""
     try:

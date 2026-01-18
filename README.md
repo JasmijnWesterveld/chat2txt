@@ -38,12 +38,12 @@ pip install -r requirements.txt
 
 Run the application:
 ```bash
-python -m chat2txt
+python -m gui
 ```
 
 Or:
 ```bash
-python chat2txt/gui.py
+python gui/gui.py
 ```
 
 ### GUI Features
@@ -65,7 +65,7 @@ pip install pyinstaller
 
 2. Build the executable:
 ```bash
-pyinstaller --onefile --windowed --name chat2txt chat2txt/__main__.py
+pyinstaller --onefile --windowed --name chat2txt gui/__main__.py
 ```
 
 The options mean:
@@ -98,15 +98,21 @@ The converted TXT files include:
 
 ```
 chat2txt/
-├── chat2txt/
+├── chat2txt/           (Core/shared logic)
+│   ├── __init__.py
+│   └── processor.py    (File processing)
+├── gui/                (Desktop GUI application)
 │   ├── __init__.py
 │   ├── __main__.py
 │   └── gui.py
+├── web/                (Streamlit web application)
+│   ├── streamlit_app.py
+│   ├── Procfile
+│   └── .streamlit/
 ├── README.md
 ├── requirements.txt
 ├── setup.py
-├── .gitignore
-└── .git/
+└── .gitignore
 ```
 
 ## License
