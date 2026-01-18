@@ -8,12 +8,12 @@ from io import StringIO
 BODY_LINE_REGEX = re.compile(r'^\*PAR(\d+):\s+(.*) . (\S+_\S+)$')
 
 PROMPTS = {
-    'happy': 'story about a time when you felt excited or really happy',
-    'angry': 'story about a time when you were really annoyed or angry',
-    'confused': 'story about a time when you felt worried or confused',
-    'proud': 'story about a time when you felt proud of yourself',
-    'problem': 'story about a time when you had a problem',
-    'important': 'story about something that has happened to you that was very important to you'
+    'happy': 'excited or really happy',
+    'angry': 'really annoyed or angry',
+    'confused': 'worried or confused',
+    'proud': 'proud of yourself',
+    'problem': 'had a problem',
+    'important': 'very important to you'
 }
 
 
