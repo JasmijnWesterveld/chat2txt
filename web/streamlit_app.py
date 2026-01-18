@@ -2,8 +2,13 @@
 
 import streamlit as st
 import os
+import sys
 import zipfile
 from io import StringIO
+
+# Add parent directory to path to import chat2txt module
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from chat2txt.processor import process_cha_content
 
 
